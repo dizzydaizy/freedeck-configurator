@@ -1,14 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 
-import { colors } from "../definitions/colors";
 import { EKeys, Keys, MediaKeys, EMediaKeys } from "../definitions/keys";
 import { EAction } from "../lib/parse/parsePage";
 import { scrollToPage } from "../lib/scrollToPage";
 import { FDButton } from "./lib/button";
 import {
-  Column,
-  Label,
   MicroButton,
   SelectWrapper,
   Row,
@@ -27,7 +24,7 @@ const Wrapper = styled.div`
 const SmallButton = styled(FDButton).attrs({ mt: 4 })`
   font-weight: bold;
 `;
-export const Action: React.FC<{
+export const ActionSettings: React.FC<{
   setNewRow: (newRow: Buffer) => void;
   addPage: () => number;
   pages: number[];
@@ -91,6 +88,7 @@ export const Action: React.FC<{
 
   useEffect(() => {
     const row = new Buffer(8);
+    console.log("ASDASDASD");
     buildNewRow(row, mode, { ctrl, shift, alt, superKey }, keys, goTo);
     setNewRow(row);
   }, [mode, goTo, keys, ctrl, shift, alt, superKey]);
@@ -102,6 +100,7 @@ export const Action: React.FC<{
   }, [loadMode]);
 
   useEffect(() => {
+    console.log(loadKeys);
     if (loadKeys?.[loadKeys.length - 1]) {
       setKeys(
         loadKeys?.filter(

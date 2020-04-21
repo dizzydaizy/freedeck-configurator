@@ -6,10 +6,10 @@ import { useDrag, useDrop } from "react-dnd";
 
 import { composeImage, composeText } from "../lib/convertFile";
 import { handleFileSelect } from "../lib/fileSelect";
-import { IRow, parseRow } from "../lib/parse/parsePage";
+import { IRow, parseRow, EAction } from "../lib/parse/parsePage";
 import { getBase64Image } from "../lib/uint8ToBase64";
-import { Action } from "./Action";
-import { Settings, ISettings, fontLarge } from "./Settings";
+import { ActionSettings } from "./ActionSettings";
+import { ImageSettings, fontLarge } from "./ImageSettings";
 import { Modal } from "./modal";
 import { Column, Row } from "./lib/misc";
 
@@ -63,6 +63,25 @@ const DropHere = styled.div`
   color: white;
 `;
 
+export interface IImageSettings {
+  contrast: number;
+  dither: boolean;
+  invert: boolean;
+  text: string;
+  textEnabled: boolean;
+  fontName: string;
+}
+
+export interface IActionSettings {
+  mode: EAction;
+  goTo: number;
+  alt: boolean;
+  ctrl: boolean;
+  shift: boolean;
+  superKey: boolean;
+  keys: number[];
+}
+
 export const Display: React.FC<{
   rowBuffer: Buffer;
   images: Buffer[];
@@ -89,7 +108,7 @@ export const Display: React.FC<{
   const [newImageFile, setNewImageFile] = useState<File>();
   const [convertedImageBuffer, setConvertedImageBuffer] = useState<Buffer>();
   const [croppedImage, setCroppedImage] = useState<Jimp>();
-  const [settings, setSettings] = useState<ISettings>({
+  const [imageSettings, setImageSettings] = useState<IImageSettings>({
     contrast: -0.12,
     dither: false,
     fontName: fontLarge,
@@ -149,10 +168,10 @@ export const Display: React.FC<{
         const image = await Jimp.read(Buffer.from(arrayBuffer));
         image.scaleToFit(256, 128);
         setCroppedImage(image);
-        setSettings({ ...settings, dither: true, contrast: -0.12 });
+        setImageSettings({ ...imageSettings, dither: true, contrast: -0.12 });
       } else {
-        setSettings({
-          ...settings,
+        setImageSettings({
+          ...imageSettings,
           dither: false,
           invert: false,
           contrast: 0.12,
@@ -169,28 +188,28 @@ export const Display: React.FC<{
             croppedImage,
             128,
             64,
-            settings.contrast,
-            settings.invert,
-            settings.dither,
-            settings.textEnabled,
-            settings.text,
-            settings.fontName
+            imageSettings.contrast,
+            imageSettings.invert,
+            imageSettings.dither,
+            imageSettings.textEnabled,
+            imageSettings.text,
+            imageSettings.fontName
           );
           setConvertedImageBuffer(buffer);
         })();
-      } else if (settings.text.length) {
+      } else if (imageSettings.text.length) {
         const buffer = await composeText(
           128,
           64,
-          settings.dither,
-          settings.text,
-          settings.fontName,
-          settings.contrast
+          imageSettings.dither,
+          imageSettings.text,
+          imageSettings.fontName,
+          imageSettings.contrast
         );
         setConvertedImageBuffer(buffer);
       }
     })();
-  }, [croppedImage, settings]);
+  }, [croppedImage, imageSettings]);
 
   const deleteImage = () => {
     setConvertedImageBuffer(new Buffer(1024));
@@ -203,8 +222,8 @@ export const Display: React.FC<{
     images,
   ]);
   const allowSettings = useMemo(
-    () => isBlack || !!newImageFile || !!settings?.text.length,
-    [isBlack, newImageFile, settings?.text]
+    () => isBlack || !!newImageFile || !!imageSettings?.text.length,
+    [isBlack, newImageFile, imageSettings?.text]
   );
 
   return (
@@ -227,16 +246,16 @@ export const Display: React.FC<{
             )}
           </Drop>
         </DropWrapper>
-        <Settings
+        <ImageSettings
           textOnly={!newImageFile}
           show={showSettings}
-          setSettings={setSettings}
-          settings={settings}
+          setSettings={setImageSettings}
+          settings={imageSettings}
         />
         <Row>
           <Column>
             {row && (
-              <Action
+              <ActionSettings
                 setNewRow={(newRow) => setNewRow(newRow, 0, secondary?.action)}
                 pages={pages}
                 title="Short Press"
@@ -250,7 +269,7 @@ export const Display: React.FC<{
           </Column>
           <Column>
             {secondary && (
-              <Action
+              <ActionSettings
                 setNewRow={(newRow) => setNewRow(newRow, 8)}
                 pages={pages}
                 title="Long Press"
