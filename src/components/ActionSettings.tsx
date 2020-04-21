@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import styled from "styled-components";
 
 import { EKeys, Keys, MediaKeys, EMediaKeys } from "../definitions/keys";
-import { EAction } from "../lib/parse/parsePage";
+import { EAction, IRow } from "../lib/parse/parsePage";
 import { scrollToPage } from "../lib/scrollToPage";
 import { FDButton } from "./lib/button";
 import {
@@ -25,101 +25,52 @@ const SmallButton = styled(FDButton).attrs({ mt: 4 })`
   font-weight: bold;
 `;
 export const ActionSettings: React.FC<{
-  setNewRow: (newRow: Buffer) => void;
   addPage: () => number;
   pages: number[];
-  loadMode: EAction;
-  loadKeys: number[];
-  loadPage: number;
+  row: IRow;
+  setRow: (settings: IRow) => void;
   title: string;
-  loadUserInteraction: boolean;
-}> = ({ setNewRow, pages, loadMode, loadKeys, loadPage, addPage, title }) => {
-  const [mode, setMode] = useState<EAction>(loadMode);
-  const [goTo, setGoTo] = useState<number>(loadPage);
-  const [alt, setAlt] = useState<boolean>(loadKeys.includes(0xe2));
-  const [ctrl, setCtrl] = useState<boolean>(loadKeys.includes(0xe0));
-  const [shift, setShift] = useState<boolean>(loadKeys.includes(0xe1));
-  const [superKey, setSuper] = useState<boolean>(loadKeys.includes(0xe3));
-  const [keys, setKeys] = useState<number[]>(
-    loadKeys?.filter(
-      (key) => key !== 0xe2 && key !== 0xe0 && key !== 0xe1 && key !== 0xe3
-    ) ?? []
-  );
-
-  const buildNewRow = useCallback(
-    (
-      row: Buffer,
-      mode: EAction,
-      modifiers: {
-        ctrl: boolean;
-        shift: boolean;
-        alt: boolean;
-        superKey: boolean;
-      },
-      keys: number[],
-      goTo: number
-    ) => {
-      if (mode === EAction.changeLayout) {
-        row.writeUInt8(1, 0);
-        row.writeInt16LE(goTo, 1);
-        return row;
-      } else if (mode === EAction.keyboard) {
-        let i = 1;
-        row.writeUInt8(0, 0);
-        if (modifiers.ctrl) row.writeUInt8(0xe0, i++);
-        if (modifiers.shift) row.writeUInt8(0xe1, i++);
-        if (modifiers.alt) row.writeUInt8(0xe2, i++);
-        if (modifiers.superKey) row.writeUInt8(0xe3, i++);
-        keys.forEach((key, index) => {
-          row.writeUInt8(Math.max(0, Math.min(key, 255)), i + index);
-        });
-        return row;
-      } else if (mode === EAction.special_keys) {
-        row.writeUInt8(3, 0);
-        row.writeInt16LE(keys[0], 1);
-        return row;
-      } else if (mode === EAction.noop) {
-        row.writeUInt8(2, 0);
-        return row;
-      }
+}> = ({ setRow, row, pages, addPage, title }) => {
+  const setMode = useCallback(
+    (mode: number) => {
+      setRow({ ...row, action: mode });
     },
-    []
+    [row]
   );
-
-  useEffect(() => {
-    const row = new Buffer(8);
-    console.log("ASDASDASD");
-    buildNewRow(row, mode, { ctrl, shift, alt, superKey }, keys, goTo);
-    setNewRow(row);
-  }, [mode, goTo, keys, ctrl, shift, alt, superKey]);
-
-  useEffect(() => {
-    if (loadMode !== mode) {
-      setMode(loadMode);
-    }
-  }, [loadMode]);
-
-  useEffect(() => {
-    console.log(loadKeys);
-    if (loadKeys?.[loadKeys.length - 1]) {
-      setKeys(
-        loadKeys?.filter(
-          (key) => key !== 0xe2 && key !== 0xe0 && key !== 0xe1 && key !== 0xe3
-        ) ?? []
-      );
-    }
-  }, [loadKeys]);
-
-  useEffect(() => {
-    setGoTo(loadPage);
-  }, [loadPage]);
+  const removeKey = useCallback(
+    (index: number) => {
+      const keys = [...row.keys];
+      keys.splice(index, 1);
+      setRow({ ...row, keys });
+    },
+    [row]
+  );
+  const addKey = useCallback(
+    (key: number) => {
+      setRow({ ...row, keys: [...row.keys, key] });
+    },
+    [row]
+  );
+  const setKeys = useCallback(
+    (keys: number[]) => {
+      setRow({ ...row, keys });
+    },
+    [row]
+  );
+  const setPage = useCallback(
+    (page: number) => {
+      setRow({ ...row, page });
+    },
+    [row]
+  );
 
   return (
     <Wrapper>
+      {JSON.stringify(row)}
       <Title>{title}</Title>
       <SelectWrapper>
         <StyledSelect
-          value={mode}
+          value={row.action}
           onChange={(e) => setMode(parseInt(e.target.value))}
         >
           <option value="0">Send Keys</option>
@@ -128,39 +79,11 @@ export const ActionSettings: React.FC<{
           <option value="2">Do nothing</option>
         </StyledSelect>
       </SelectWrapper>
-      {mode === 0 && (
+      {row.action === 0 && (
         <>
-          <Row>
-            <CheckButton width="24%" uff={ctrl} onClick={(e) => setCtrl(!ctrl)}>
-              Ctrl
-            </CheckButton>
-            <CheckButton
-              width="24%"
-              uff={shift}
-              onClick={(e) => setShift(!shift)}
-            >
-              Shift
-            </CheckButton>
-            <CheckButton width="24%" uff={alt} onClick={(e) => setAlt(!alt)}>
-              Alt
-            </CheckButton>
-            <CheckButton
-              width="24%"
-              uff={superKey}
-              onClick={(e) => setSuper(!superKey)}
-            >
-              Win
-            </CheckButton>
-          </Row>
           <WrapRow>
-            {keys.map((key, index) => (
-              <MicroButton
-                onClick={() => {
-                  const newKeys = [...keys];
-                  newKeys.splice(index, 1);
-                  setKeys(newKeys.slice(0, 7));
-                }}
-              >
+            {row.keys.map((key, index) => (
+              <MicroButton onClick={() => removeKey(index)}>
                 {EKeys[key].toString()}
               </MicroButton>
             ))}
@@ -168,7 +91,7 @@ export const ActionSettings: React.FC<{
           <SelectWrapper>
             <StyledSelect
               value={0}
-              onChange={(e) => setKeys([...keys, parseInt(e.target.value)])}
+              onChange={(e) => addKey(parseInt(e.target.value))}
             >
               <option key={0} value={0}>
                 Nothing
@@ -183,13 +106,13 @@ export const ActionSettings: React.FC<{
           </SelectWrapper>
         </>
       )}
-      {mode === 1 && (
+      {row.action === 1 && (
         <>
           {pages.length ? (
             <SelectWrapper>
               <StyledSelect
-                value={goTo}
-                onChange={(e) => setGoTo(parseInt(e.target.value))}
+                value={row.page}
+                onChange={(e) => setPage(parseInt(e.target.value))}
               >
                 <option value={-1}>Select Page</option>
                 {pages.map((pageNumber) => (
@@ -200,22 +123,22 @@ export const ActionSettings: React.FC<{
               </StyledSelect>
             </SelectWrapper>
           ) : null}
-          {goTo === -1 ? (
-            <SmallButton size={1} onClick={() => setGoTo(addPage())}>
+          {row.page === -1 ? (
+            <SmallButton size={1} onClick={() => setPage(addPage())}>
               Add Page +
             </SmallButton>
           ) : (
-            <SmallButton size={1} onClick={() => scrollToPage(goTo)}>
-              Scroll To {goTo}
+            <SmallButton size={1} onClick={() => scrollToPage(row.page)}>
+              Scroll To {row.page}
             </SmallButton>
           )}
         </>
       )}
-      {mode === 3 && (
+      {row.action === 3 && (
         <>
           <SelectWrapper>
             <StyledSelect
-              value={keys[0]}
+              value={row.keys[0]}
               onChange={(e) => setKeys([parseInt(e.target.value)])}
             >
               <option key={0} value={0}>

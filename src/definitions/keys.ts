@@ -81,6 +81,10 @@
 }*/
 
 export enum EKeys {
+  "Ctrl" = 0xe0,
+  "Shift" = 0xe1,
+  "Alt" = 0xe2,
+  "Super" = 0xe3,
   "#1" = 30,
   "#2" = 31,
   "#3" = 32,

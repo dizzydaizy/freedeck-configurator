@@ -72,16 +72,6 @@ export interface IImageSettings {
   fontName: string;
 }
 
-export interface IActionSettings {
-  mode: EAction;
-  goTo: number;
-  alt: boolean;
-  ctrl: boolean;
-  shift: boolean;
-  superKey: boolean;
-  keys: number[];
-}
-
 export const Display: React.FC<{
   rowBuffer: Buffer;
   images: Buffer[];
@@ -154,6 +144,46 @@ export const Display: React.FC<{
     }
   }, [row, images]);
 
+  const buildNewRow = useCallback((row: Buffer, settings: IRow) => {
+    if (settings.action === EAction.changeLayout) {
+      row.writeUInt8(1, 0);
+      row.writeInt16LE(settings.page, 1);
+      return row;
+    } else if (settings.action === EAction.keyboard) {
+      let i = 1;
+      row.writeUInt8(0, 0);
+      settings.keys.forEach((key, index) => {
+        row.writeUInt8(Math.max(0, Math.min(key, 255)), i + index);
+      });
+      return row;
+    } else if (settings.action === EAction.special_keys) {
+      row.writeUInt8(3, 0);
+      row.writeInt16LE(settings.keys[0], 1);
+      return row;
+    } else if (settings.action === EAction.noop) {
+      row.writeUInt8(2, 0);
+      return row;
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log("ROW", imageIndex, row);
+    if (row) {
+      const newRow = new Buffer(8);
+      buildNewRow(newRow, row);
+      setNewRow(newRow, 0, secondary?.action);
+    }
+  }, [row]);
+
+  useEffect(() => {
+    console.log("SECOND", imageIndex, secondary);
+    if (secondary) {
+      const newRow = new Buffer(8);
+      buildNewRow(newRow, secondary);
+      setNewRow(newRow, 0, undefined);
+    }
+  }, [secondary]);
+
   useEffect(() => {
     if (row && convertedImageBuffer) {
       setPreviewImage(getBase64Image([convertedImageBuffer], 0));
@@ -218,14 +248,6 @@ export const Display: React.FC<{
     setPreviewImage(getBase64Image(images, imageIndex));
   };
 
-  const isBlack = useMemo(() => !images[imageIndex]?.find((val) => val !== 0), [
-    images,
-  ]);
-  const allowSettings = useMemo(
-    () => isBlack || !!newImageFile || !!imageSettings?.text.length,
-    [isBlack, newImageFile, imageSettings?.text]
-  );
-
   return (
     <Wrapper ref={dragRef} opacity={opacity}>
       <ImagePreview
@@ -256,28 +278,22 @@ export const Display: React.FC<{
           <Column>
             {row && (
               <ActionSettings
-                setNewRow={(newRow) => setNewRow(newRow, 0, secondary?.action)}
                 pages={pages}
-                title="Short Press"
-                loadMode={row.action}
-                loadKeys={row.keys}
-                loadPage={row.page}
+                row={row}
+                title={"Short Press"}
+                setRow={setRow}
                 addPage={addPage}
-                loadUserInteraction={false}
               />
             )}
           </Column>
           <Column>
             {secondary && (
               <ActionSettings
-                setNewRow={(newRow) => setNewRow(newRow, 8)}
                 pages={pages}
                 title="Long Press"
-                loadMode={secondary.action}
-                loadKeys={secondary.keys}
-                loadPage={secondary.page}
+                row={secondary}
+                setRow={setSecondary}
                 addPage={addPage}
-                loadUserInteraction={false}
               />
             )}
           </Column>
