@@ -9,7 +9,7 @@
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "@types/jest": "^24.9.1",
-    "@types/lodash": "^4.14.160",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^12.12.29",
     "@types/pngjs": "^3.4.1",
     "@types/preval.macro": "^3.0.0",
