@@ -2,13 +2,13 @@
 
 ## An OpenSource device inspired by the Elgato Stream Deck
 
-### Live App hosted [HERE](http://freedeck.gosewis.ch/)
+### Live App hosted [HERE](https://fdconfig.freeyourstream.com/)
 
 ### Discord Community [HERE](https://discord.gg/sEt2Rrd)
 
 This is the software to create the config file and converting the images for the FreeDeck
 
-The hardware related info can be found [here](https://github.com/koriwi/freedeck-hardware)
+The hardware related info can be found [here](https://github.com/freeyourstream/freedeck-hardware)
 
 ## Setup (for developers only)
 
@@ -65,7 +65,7 @@ thats it
 
 ### Settings explained in Detail
 
-**_Things marked with  will only work if you have the develop branch of the arduino software flashed to your FreeDeck!_**
+**_Things marked with \* will only work if you have the develop branch of the arduino software flashed to your FreeDeck!_**
 
 #### Display Settings
 
@@ -108,3 +108,9 @@ The general settings can be found here. Here you can set different things includ
 
 1. **Serial upload and download** You can now upload and download your config from your FreeDeck via USB in a Chrome Browser (Chrome or Chromium for now).
    Go to the general settings menu in the top right corner of your screen to find these new settings.
+2. **Quick Serial upload and download** If you've once connected successfully over serial to a FreeDeck, it will automatically reconnect the next you open the configurator and will replace the up and download buttons. If you wish to use the normal way again, just click the litte lock icon next to the url bar and delete the serial connection there. After reloading the page the old buttons appear. (ToDo make this configurable)
+
+## Known issues
+
+- When i change the display layout (width or height) the already created pages don't create additional displays.
+  - Solution: Just change this before pressing `Add Page`
